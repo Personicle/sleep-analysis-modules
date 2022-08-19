@@ -140,22 +140,38 @@ for i in alert.user_id.unique():
     temp1=[]
     temp1=alert[alert.user_id==i]
     
-    worstdayhi=temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('ci95_hi')].values[0]
-    worstdaylow=temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('ci95_lo')].values[0]
+    print(i)
     
-    bestdayhi=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('ci95_hi')].values[0]
-    bestdaylow=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('ci95_lo')].values[0]
+    try:
     
+        worstdayhi=temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('ci95_hi')].values[0]
+        worstdaylow=temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('ci95_lo')].values[0]
+
+        bestdayhi=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('ci95_hi')].values[0]
+        bestdaylow=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('ci95_lo')].values[0]
+
+
+        bestdaymeansleep=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('mean')].values[0]
+        worstdaymeansleep=temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('mean')].values[0]
+
+        bestday=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('day_name')].values[0]
+        worstday=temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('day_name')].values[0]
+
+        difference=round((bestdaymeansleep-worstdaymeansleep)*60)
+        lifeaspect=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('event_name')].values[0]
+        
+        
+       
+
+        
+        
+        
+        
     
-    bestdaymeansleep=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('mean')].values[0]
-    worstdaymeansleep=temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('mean')].values[0]
-    
-    bestday=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('day_name')].values[0]
-    worstday=temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('day_name')].values[0]
-    
-    difference=round((bestdaymeansleep-worstdaymeansleep)*60)
-    lifeaspect=temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('event_name')].values[0]
-    
+    except IndexError:
+        continue  ##Running into error if neither of best_day or worst_day exists due to user being relatively new
+         ##Found the issue for fw9529@wayne.edu	##Handled it
+
     
     
     if not((worstdayhi>=bestdaylow)&(worstdayhi<=bestdayhi)):
@@ -179,14 +195,54 @@ for i in alert.user_id.unique():
                                                                    temp2['insighttext']='You got {} minutes lesser {} on {} than {} '.format(difference,lifeaspect,worstday,bestday)
                                                 
             
-       
-        
+                
+                  
         ds.append(copy.deepcopy(temp2))
       
         
     else:
-        pass
-       
+        
+        
+        
+        bestdaycount = temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('day_name')].values[0]
+        worstdaycount = temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('day_name')].values[0]
+        deg = (bestdaycount + worstdaycount - 2) #deegrees of freedom
+        stdbest = temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('std')].values[0]
+        stdworst = temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('std')].values[0]
+        std_N1N2 = sqrt( ((bestdaycount - 1)*(stdbest)**2 + (worstdaycount - 1)*(stdworst)**2) / deg) #average standard deviations between groups.
+        diff_mean = bestdaymeansleep-worstdaymeansleep
+        
+        MoE = t.ppf(0.975, deg) * std_N1N2 * sqrt(1/(bestdaycount) + 1/(worstdaycount)) # margin of error 
+        
+        upperci= np.round(diff_mean+MoE,2)
+        lowerci= np.round(diff_mean-MoE,2)
+            
+        if 0>=lowerci and 0<=upperci:
+            
+            if (bestdaymeansleep>8.0):
+                
+                temp2['impact']='positive'
+                temp2['insighttext']='You got {} minutes better {} on {} than {} '.format(difference,lifeaspect,bestday,worstday)
+
+            
+            else:
+                temp2['impact']='negative'
+                temp2['insighttext']='You got {} minutes lesser {} on {} than {} '.format(difference,lifeaspect,worstday,bestday)
+
+                
+                                                                   #temp2['impact']='negative'
+                                                
+            
+                
+          
+        
+        ds.append(copy.deepcopy(temp2))
+      
+    
+
+        
+
+
 
 insights=pd.DataFrame(ds)
 insights=insights[['user_id','life_aspect','impact','insighttext','timestampadded','expirydate','view']].copy()
