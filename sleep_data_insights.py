@@ -217,7 +217,7 @@ for i in alert.user_id.unique():
         upperci= np.round(diff_mean+MoE,2)
         lowerci= np.round(diff_mean-MoE,2)
             
-        if 0>=lowerci and 0<=upperci:
+        if 0<lowerci:
             
             if (bestdaymeansleep>8.0):
                 
