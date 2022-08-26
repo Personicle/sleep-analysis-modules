@@ -204,8 +204,8 @@ for i in alert.user_id.unique():
         
         
         
-        bestdaycount = temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('day_name')].values[0]
-        worstdaycount = temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('day_name')].values[0]
+        bestdaycount = temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('count')].values[0]
+        worstdaycount = temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('count')].values[0]
         deg = (bestdaycount + worstdaycount - 2) #deegrees of freedom
         stdbest = temp1[temp1.summary=='best_day'].iloc[:,temp1.columns.get_loc('std')].values[0]
         stdworst = temp1[temp1.summary=='worst_day'].iloc[:,temp1.columns.get_loc('std')].values[0]
