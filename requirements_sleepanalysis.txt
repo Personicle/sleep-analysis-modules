@@ -19,5 +19,6 @@ httptools==0.1.*
 httpx
 swifter
 geocoder
+scipy
 
 
