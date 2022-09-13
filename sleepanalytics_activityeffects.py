@@ -19,6 +19,8 @@ from scipy.stats import t
 
 from datetime import datetime as dt, timedelta
 
+from dct_activity import dct_activity
+
 
 
 import sqlite3 as sq3
@@ -205,20 +207,6 @@ pivot_sleep.columns = pivot_sleep.columns.str.strip()
 pivot_sleep.columns = pivot_sleep.columns. str. replace(' ','').str. replace('activity_duration','')
 pivot_sleep.columns = map(str.lower,pivot_sleep.columns)
 
-
-#Activity dictionaries that needs to be updated over time
-dct_activity={
-        
-        'running' : {'no_activity': [0,0], 'short_run': [1, 15], 'medium_run' : [16, 30], 'long_run':[31, np.Inf]},
-
-'biking': {'no_activity':[0,0], 'short_bike': [1,30] ,'medium_bike': [31,60],'long_bike': [61,np.Inf]},
-
-'mindfulness': {'no_activity':[0,0], 'short_mindfulness': [1,5] ,'medium_mindfulness': [6,10],'long_mindfulness': [11,np.Inf]},
- 
-'strengthtraining': {'no_activity':[0,0], 'short_strengthtraining': [11,20] ,'medium_strengthtraining': [21,50],'long_strengthtraining': [51,np.Inf]}
-
-    
-    }
 
 cols = pivot_sleep.columns[2:]
 pivot_sleep[cols] =pivot_sleep[cols].round(0)
