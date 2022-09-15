@@ -143,7 +143,7 @@ except InterfaceError as e:
 
 #es1=activity, es2=sleep
 
-qry = '''
+qry = """
     select  
         {es1}.user_ID,
         {es1}.event_name {es1}_event_name,
@@ -155,9 +155,13 @@ qry = '''
         {es2}.end_time {es2}_end_time,
         {es2}.parameter2 {es2}_parameter2
 
-    from
+  from
         {es2} left join {es1} on
-        
+        (
+        (
+        {es1}.user_id={es2}.user_id
+        )
+        and
         
         (
         ({es2}.start_time between {es1}.interval_start and {es1}.interval_end)
@@ -166,12 +170,13 @@ qry = '''
         
         ({es2}.end_time between {es1}.interval_start and {es1}.interval_end)
         )
+        )
 
         
         
         
         
-    '''.format(es1='es1_name', es2='es2_name')
+    """.format(es1='es1_name', es2='es2_name')
 result_df = pd.read_sql_query(qry, conn)
 #conn.close()
 
@@ -362,7 +367,7 @@ except KeyError:
 
 
 
-insights.to_sql(name='insights', con=engine, index=False,if_exists='append')
+#insights.to_sql(name='insights', con=engine, index=False,if_exists='append')
 
 
     
