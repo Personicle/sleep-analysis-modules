@@ -367,7 +367,7 @@ except KeyError:
 
 
 
-#insights.to_sql(name='insights', con=engine, index=False,if_exists='append')
+insights.to_sql(name='insights', con=engine, index=False,if_exists='append')
 
 
     
