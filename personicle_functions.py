@@ -17,6 +17,18 @@ from datetime import timedelta, date
 from math import sqrt
 from scipy.stats import t
 
+from base_schema import *
+from db_connection import *
+from sqlalchemy import select
+import pandas.io.sql as sqlio
+
+
+
+def datastream(tblname):
+    datastream='select * from '+tblname 
+    datastream= sqlio.read_sql_query(datastream,engine)
+    
+    return datastream
 
 
 #Dictionary to map units and activity

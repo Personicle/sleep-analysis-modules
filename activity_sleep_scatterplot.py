@@ -21,8 +21,9 @@ from personicle_functions import *
 query_events=query_events='select * from  personal_events '
 events_stream= sqlio.read_sql_query(query_events,engine)
 
-data_stream='select * from  calories_total '
-data_stream= sqlio.read_sql_query(data_stream,engine)
+
+
+data_stream=datastream('step_count').copy()
 
 data_stream=timestamp_modify(data_stream).copy()
 events_stream=events_overlap(events_stream)
@@ -143,7 +144,9 @@ sleep_event_matched_data=sleep_event_matched_data[(sleep_event_matched_data.acti
 
 
 
-if sleep_event_matched_data.activity_name.unique()=='steps': #will change to list soon
+#if sleep_event_matched_data.activity_name.unique()=='steps': #will change to list soon
+
+if sleep_event_matched_data.activity_name.unique() in (activity_cumulative):
     pivot_sleep=sleep_event_matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration','count'],aggfunc=np.sum).fillna(0).reset_index()
   
 else:
