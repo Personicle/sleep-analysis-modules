@@ -16,6 +16,7 @@ from datetime import datetime
 from datetime import timedelta, date
 from math import sqrt
 from scipy.stats import t
+#from scipy.stats import st
 
 from base_schema import *
 from db_connection import *
@@ -29,47 +30,6 @@ def datastream(tblname):
     datastream= sqlio.read_sql_query(datastream,engine)
     
     return datastream
-
-
-#Dictionary to map units and activity
-eventname_unit={
-    
-    'stepsperminute':'steps',
-    'kilo_calories':'calories',
-    'meters':'distance'
-    }
-
-#Include activity type that needs to be summed up
-activity_cumulative=['steps']
-
-#Dictionary to map analysisid by activity:
-    
-activity_analysisid={
-     'biking':1,
-     'steps':2,
-    'calories':3,
-    'distance':4
-     
-     }   
-
-dct_activity={
-        
-        'running' : {'no_activity': [0,0], 'short_run': [1, 15], 'medium_run' : [16, 30], 'long_run':[31, np.Inf]},
-
-'biking': {'no_activity':[0,0], 'short_bike': [1,30] ,'medium_bike': [31,60],'long_bike': [61,np.Inf]},
-
-'mindfulness': {'no_activity':[0,0], 'short_mindfulness': [1,5] ,'medium_mindfulness': [6,10],'long_mindfulness': [11,np.Inf]},
- 
-'strengthtraining': {'no_activity':[0,0], 'short_strengthtraining': [11,20] ,'medium_strengthtraining': [21,50],'long_strengthtraining': [51,np.Inf]},
-
-    'Walking': {'no_activity':[0,0], 'short_walk': [11,20] ,'medium_walk': [21,50],'long_walk': [51,np.Inf]},
-    
-    #'steps':{'no_activity':[0,0], 'shortduration_steps': [1,600] ,'mediumduration_steps': [601,822],'longduration_steps': [823,np.Inf]}
-    'stepscount':{'no_activity':[0,0], 'low_steps_perday': [1,4300] ,'medium_steps_perday': [4301,10000],'high_steps_perday': [10301,np.Inf] }
-    
-    
-}
-
 
 
 
@@ -181,24 +141,35 @@ def getCategory(num, dct):
             return key
 
 
-def insights_generate(insight_activity,pivot_sleep):
+def insights_generate(insight_activity,pivot_sleep,ci):
     current_activity=insight_activity #change here
-
-
+    
+    alpha=(1-(ci)*0.01)
+    zscore=round(stats.norm.ppf((1-(alpha)/2)),2)
     stats_sleep=[]
     stats_sleep = pivot_sleep.groupby(['user_id',current_activity])['sleep_duration'].agg(['mean', 'count', 'std'])
     #display(stats_sleep)
 
-    ci95_hi = []
-    ci95_lo = []
+    # ci95_hi = []
+    # ci95_lo = []
+    
+    ci_hi=[]
+    ci_lo=[]
 
     for i in stats_sleep.index:
         m, c, s = stats_sleep.loc[i]
-        ci95_hi.append(m + 1.96*s/math.sqrt(c))
-        ci95_lo.append(m - 1.96*s/math.sqrt(c))
+        # ci95_hi.append(m + 1.96*s/math.sqrt(c)) #In a variable define a multiplier
+        # ci95_lo.append(m - 1.96*s/math.sqrt(c))
+        
+        ci_hi.append(m + zscore*s/math.sqrt(c)) #In a variable define a multiplier
+        ci_lo.append(m - zscore*s/math.sqrt(c))
 
-    stats_sleep['ci95_hi'] = ci95_hi
-    stats_sleep['ci95_lo'] = ci95_lo
+        
+    # stats_sleep['ci95_hi'] = ci95_hi
+    # stats_sleep['ci95_lo'] = ci95_lo
+    
+    stats_sleep['ci_hi'] = ci_hi
+    stats_sleep['ci_lo'] = ci_lo
     #stats_sleep['event_name']='sleep'
 
 
@@ -221,12 +192,12 @@ def insights_generate(insight_activity,pivot_sleep):
             activities = event_summary.copy()
             activities.remove('no_activity')
             for activity in activities:
-                noactivity_high = user_df[user_df.event_summary=='no_activity'].iloc[:,user_df.columns.get_loc('ci95_hi')].values[0]
-                noactivity_low = user_df[user_df.event_summary=='no_activity'].iloc[:,user_df.columns.get_loc('ci95_lo')].values[0]
+                noactivity_high = user_df[user_df.event_summary=='no_activity'].iloc[:,user_df.columns.get_loc('ci_hi')].values[0]
+                noactivity_low = user_df[user_df.event_summary=='no_activity'].iloc[:,user_df.columns.get_loc('ci_lo')].values[0]
                 noactivity_meansleep = user_df[user_df.event_summary=='no_activity'].iloc[:,user_df.columns.get_loc('mean')].values[0]
 
-                activity_high = user_df[user_df.event_summary==activity].iloc[:,user_df.columns.get_loc('ci95_hi')].values[0]
-                activity_low = user_df[user_df.event_summary==activity].iloc[:,user_df.columns.get_loc('ci95_lo')].values[0]
+                activity_high = user_df[user_df.event_summary==activity].iloc[:,user_df.columns.get_loc('ci_hi')].values[0]
+                activity_low = user_df[user_df.event_summary==activity].iloc[:,user_df.columns.get_loc('ci_lo')].values[0]
                 activity_meansleep=user_df[user_df.event_summary==activity].iloc[:,user_df.columns.get_loc('mean')].values[0]
 
 
