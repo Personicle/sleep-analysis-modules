@@ -19,13 +19,12 @@ dct_activity={
  
 'strengthtraining': {'no_activity':[0,0], 'short_strengthtraining': [11,20] ,'medium_strengthtraining': [21,50],'long_strengthtraining': [51,np.Inf]},
 
-    'Walking': {'no_activity':[0,0], 'short_walk': [11,20] ,'medium_walk': [21,50],'long_walk': [51,np.Inf]},
-    
-    #'steps':{'no_activity':[0,0], 'shortduration_steps': [1,600] ,'mediumduration_steps': [601,822],'longduration_steps': [823,np.Inf]}
-    'stepscount':{'no_activity':[0,0], 'low_steps_perday': [1,4300] ,'medium_steps_perday': [4301,10000],'high_steps_perday': [10301,np.Inf] }
-    
-    
+ 'walking': {'no_activity':[0,0], 'short_walk': [11,20] ,'medium_walk': [21,50],'long_walk': [51,np.Inf]}
+
 }
+
+
+
 
 
 

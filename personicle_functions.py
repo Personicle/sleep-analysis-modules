@@ -12,16 +12,18 @@ import pandas as pd
 import json
 import math
 from time import gmtime, strftime
-from datetime import datetime
-from datetime import timedelta, date
+import datetime
+from datetime import datetime, timedelta
 from math import sqrt
-from scipy.stats import t
+from scipy.stats import t,norm
 #from scipy.stats import st
+from datetime import datetime, timedelta
 
 from base_schema import *
 from db_connection import *
 from sqlalchemy import select
 import pandas.io.sql as sqlio
+from utility_functions_sleepanalysis import *
 
 
 
@@ -137,7 +139,7 @@ def events_overlap(eventstream):
 def getCategory(num, dct):
     
     for key in dct.keys():
-        if dct[key][0] <= num <= dct[key][1]:
+        if dct[key][0] <= round(num) <= dct[key][1]:
             return key
 
 
@@ -145,32 +147,25 @@ def insights_generate(insight_activity,pivot_sleep,ci):
     current_activity=insight_activity #change here
     
     alpha=(1-(ci)*0.01)
-    zscore=round(stats.norm.ppf((1-(alpha)/2)),2)
+    zscore=round(norm.ppf((1-(alpha)/2)),2)
     stats_sleep=[]
     stats_sleep = pivot_sleep.groupby(['user_id',current_activity])['sleep_duration'].agg(['mean', 'count', 'std'])
-    #display(stats_sleep)
-
-    # ci95_hi = []
-    # ci95_lo = []
+  
     
     ci_hi=[]
     ci_lo=[]
 
     for i in stats_sleep.index:
         m, c, s = stats_sleep.loc[i]
-        # ci95_hi.append(m + 1.96*s/math.sqrt(c)) #In a variable define a multiplier
-        # ci95_lo.append(m - 1.96*s/math.sqrt(c))
-        
-        ci_hi.append(m + zscore*s/math.sqrt(c)) #In a variable define a multiplier
-        ci_lo.append(m - zscore*s/math.sqrt(c))
 
         
-    # stats_sleep['ci95_hi'] = ci95_hi
-    # stats_sleep['ci95_lo'] = ci95_lo
+        ci_hi.append(m + zscore*s/math.sqrt(c)) 
+        ci_lo.append(m - zscore*s/math.sqrt(c))
+
+
     
     stats_sleep['ci_hi'] = ci_hi
     stats_sleep['ci_lo'] = ci_lo
-    #stats_sleep['event_name']='sleep'
 
 
     alert=stats_sleep.reset_index().copy()
@@ -187,6 +182,7 @@ def insights_generate(insight_activity,pivot_sleep,ci):
 
     for user_id in alert.user_id.unique():
         user_df = alert[alert.user_id==user_id]
+        display(alert)
         event_summary = set(user_df.event_summary)
         if 'no_activity' in event_summary:
             activities = event_summary.copy()
@@ -210,15 +206,16 @@ def insights_generate(insight_activity,pivot_sleep,ci):
                 stdnoactivity = user_df[user_df.event_summary=='no_activity'].iloc[:,user_df.columns.get_loc('std')].values[0]
                 std_N1N2 = sqrt( ((activitycount - 1)*(stdactivity)**2 + (noactivitycount - 1)*(stdnoactivity)**2) / deg) #average standard deviations between groups.
                 diff_mean = abs(activity_meansleep-noactivity_meansleep)
+                #diff_mean = abs(activitycount-noactivitycount) #Dummy message test
 
 
                 temp2['user_id']=user_id
                 temp2['life_aspect']='sleep'
                 temp2['timestampadded']=strftime("%Y-%m-%d %H:%M:%S", gmtime())
-                temp2['expirydate']=(datetime.datetime.now() + timedelta(days=7) ).strftime('%Y-%m-%d')
+                temp2['expirydate']=(datetime.now() + timedelta(days=7) ).strftime('%Y-%m-%d')
                 temp2['view']='No'
 
-                MoE = t.ppf(0.95, deg) * std_N1N2 * sqrt(1/(activitycount) + 1/(noactivitycount)) # margin of error 
+                MoE = t.ppf((ci)*0.01, deg) * std_N1N2 * sqrt(1/(activitycount) + 1/(noactivitycount)) # margin of error 
 
                 upperci= np.round(diff_mean+MoE,2)
                 lowerci= np.round(diff_mean-MoE,2)
@@ -229,12 +226,13 @@ def insights_generate(insight_activity,pivot_sleep,ci):
 
                     msg = ''
                     if activity_meansleep > noactivity_meansleep:
-
-                        msg = f"""{dct_activity[current_activity][activity][0]} to {dct_activity[current_activity][activity][1]} mins of {current_activity} increased your sleep by {int((activity_meansleep - noactivity_meansleep)*60)} mins"""
-
+                        
+                        msg = f"""{dct_activity[current_activity][activity][0]} to {dct_activity[current_activity][activity][1]} mins of  {current_activity} increased your sleep by {int((activity_meansleep - noactivity_meansleep)*60)} mins"""
+                            
+                       
                     else:
+                        msg = f"""{dct_activity[current_activity][activity][0]} to {dct_activity[current_activity][activity][1]} number of steps reduced your sleep by {int((activity_meansleep - noactivity_meansleep)*60)} mins"""
 
-                        msg = f"""{dct_activity[current_activity][activity][0]} to {dct_activity[current_activity][activity][1]} mins of {current_activity} reduced your sleep by {abs(int((activity_meansleep - noactivity_meansleep)*60))} mins"""
 
                     if "inf" in msg:
                         msg = "More than " + msg.replace("to inf", "")
@@ -252,7 +250,6 @@ def insights_generate(insight_activity,pivot_sleep,ci):
                     pass
                 
             return ds
-        
         
         
 
