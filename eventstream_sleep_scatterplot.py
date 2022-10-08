@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Oct  3 12:19:18 2022
-
-@author: nbadam
-"""
-
 import numpy as np
 import pandas as pd
 from base_schema import *
@@ -18,42 +11,28 @@ from sqlite3 import InterfaceError
 
 from personicle_functions import *
 from utility_functions_sleepanalysis import *
+from datetime import datetime, timedelta
+import datetime
 
 
-
-
-
-
-def datastream_scatterplot(ds):
-    
+def eventstream_scatterplot(eventname):
     query_events=query_events='select * from  personal_events '
     events_stream= sqlio.read_sql_query(query_events,engine)
-    data_stream=datastream(ds).copy()
     
-    data_stream=timestamp_modify(data_stream).copy()
     events_stream=events_overlap(events_stream)
     
     events_stream['duration']=(events_stream['end_time'] - events_stream['start_time']) / pd.Timedelta(hours=1)
     events_stream['end_date'] = pd.to_datetime(events_stream['end_time']).dt.date
     events_stream['end_date']=events_stream['end_date'].astype(str)
     
-    
-    # Getting list of dates that have high intense activities
-    # to be removed to check Step count effect
-    
-    dates_tobe_excluded=events_stream[events_stream.event_name.isin(['Running','Biking','Strength training','Training','FunctionalStrengthTraining','Rowing','activity','Afternoon Ride','Cycling','Evening Run','Afternoon Run'])]
-    
-    
-    events_stream=events_stream[~events_stream.end_date.isin(dates_tobe_excluded.end_date.unique())].copy()
-    
     # Matching events with sleep data
-    es1=data_stream.copy()
+    
+    #es1=data_stream.copy()
+    es1=events_stream[~(events_stream.event_name.isin(['Sleep']))]
     es2=events_stream[(events_stream.event_name.isin(['Sleep']))&(events_stream.duration<=15)] #sleep
     
     es1['interval_start'] = es1['start_time'] + timedelta(hours=0)
     es1['interval_end'] = es1['start_time'] + timedelta(hours=24)
-    es1['event_name']=es1['unit'].map(eventname_unit)
-    
     
     try:
         es1['parameter2'] = es1['parameter2'].apply(lambda x: json.dumps(x))
@@ -86,6 +65,7 @@ def datastream_scatterplot(ds):
         print(es2.dtypes)
         raise e
     
+    
     #es1=steps(datastream), es2=sleep
     es1='es1_name'
     es2='es2_name'
@@ -96,7 +76,6 @@ def datastream_scatterplot(ds):
             {es1}.event_name activity_name,
             {es1}.start_time activity_start_time,
             {es1}.end_time activity_end_time,
-             {es1}.value count,
             {es2}.event_name effect_event_name,
             {es2}.start_time sleep_start_time,
             {es2}.end_time sleep_end_time,
@@ -133,7 +112,6 @@ def datastream_scatterplot(ds):
     for col in ['activity_name','activity_start_time','activity_end_time','sleep_start_time', 'sleep_end_time']:
         sleep_event_matched_data[col].fillna(0,inplace=True)
         
-    
     for f in ['activity_start_time','activity_end_time','sleep_start_time', 'sleep_end_time']:
         sleep_event_matched_data[f] = pd.to_datetime(sleep_event_matched_data[f], infer_datetime_format=True)
     
@@ -147,44 +125,27 @@ def datastream_scatterplot(ds):
     
     sleep_event_matched_data=sleep_event_matched_data[(sleep_event_matched_data.activity_name!=0)].copy()
     
+    pivot_sleep=sleep_event_matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration'],aggfunc=np.sum).fillna(0).reset_index()
     
     
-    #if sleep_event_matched_data.activity_name.unique()=='steps': #will change to list soon
-    
-    if sleep_event_matched_data.activity_name.unique() in (activity_cumulative):
-        pivot_sleep=sleep_event_matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration','count'],aggfunc=np.sum).fillna(0).reset_index()
-      
-    else:
-        pivot_sleep=sleep_event_matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration','count'],aggfunc=np.mean).fillna(0).reset_index()
-    
-        
-        
     
     new_cols=[('{1} {0}'.format(*tup)) for tup in pivot_sleep.columns]
     
     # assign it to the dataframe (assuming you named it pivoted
     pivot_sleep.columns= new_cols
     
-    # resort the index, so you get the columns in the order you specified
-    #pivot_sleep.sort_index(axis='columns').head()
-    
     
     pivot_sleep.columns = pivot_sleep.columns.str.strip()
     
     pivot_sleep.columns = pivot_sleep.columns. str. replace(' ','').str. replace('activity_duration','')
     
-    pivot_sleep.rename(columns={ pivot_sleep.columns[-1]: "activity_value",pivot_sleep.columns[-2]: "activity_duration" },inplace=True)
-    
-    
-    pivot_sleep['activity_name']=sleep_event_matched_data.activity_name.unique()[0]
-    pivot_sleep['activity_units']=list(eventname_unit.keys())[list(eventname_unit.values()).index(sleep_event_matched_data.activity_name.unique()[0])]
-    
     pivot_sleep.columns = map(str.lower,pivot_sleep.columns)
     
+    pivot_sleep=pd.melt(pivot_sleep, id_vars=['user_id','sleep_duration']).copy()
     
-    scatterplot_insights=pivot_sleep.copy()
+    pivot_sleep.rename(columns={'variable':'activity_name','value':'activity_value'},inplace=True)
     
-    display(scatterplot_insights.head())
+    scatterplot_insights=pivot_sleep[pivot_sleep.activity_name==eventname].copy()
     
     dic = {}
     
@@ -198,11 +159,12 @@ def datastream_scatterplot(ds):
             l.append([row['activity_value'],row['sleep_duration']])
             
     
-        dic[user_id] = {'XAxis' : {'Measure':scatterplot_insights.activity_name.unique()[0] , 'unit': "Total"+" "+eventname_unit[scatterplot_insights.activity_units.unique()[0]]+" "+"per day"}, 'YAxis': {
+        dic[user_id] = {'XAxis' : {'Measure':scatterplot_insights.activity_name.unique()[0] , 'unit': "hours" }, 'YAxis': {
         'Measure': "Sleep",
         'unit': "hours"
         }, 'data' : l}
-     
+        
+        
     
     scatterplot_data = pd.DataFrame(dic.items())
     scatterplot_data.rename(columns={0:'user_id',1:'correlation_result'},inplace=True)
@@ -211,5 +173,4 @@ def datastream_scatterplot(ds):
     scatterplot_data['timestampadded']=strftime("%Y-%m-%d %H:%M:%S", gmtime())
     scatterplot_data['view']='No'
     
-    return scatterplot_data
-    
+    return scatterplot_data    
