@@ -24,7 +24,7 @@ from utility_functions_sleepanalysis import *
 
 
 
-def datastream_scatterplot(ds):
+def datastream_scatterplot(ds,temporal_time_hrs):
     
     query_events=query_events='select * from  personal_events '
     events_stream= sqlio.read_sql_query(query_events,engine)
@@ -51,7 +51,7 @@ def datastream_scatterplot(ds):
     es2=events_stream[(events_stream.event_name.isin(['Sleep']))&(events_stream.duration<=15)] #sleep
     
     es1['interval_start'] = es1['start_time'] + timedelta(hours=0)
-    es1['interval_end'] = es1['start_time'] + timedelta(hours=24)
+    es1['interval_end'] = es1['start_time'] + timedelta(hours=temporal_time_hrs)
     es1['event_name']=es1['unit'].map(eventname_unit)
     
     
