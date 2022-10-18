@@ -24,7 +24,7 @@ from utility_functions_sleepanalysis import *
 
 
 
-def datastream_scatterplot(ds,temporal_time_hrs):
+def datastream_scatterplot(ds,temporal_time_hrs,effect_activity):
     
     query_events=query_events='select * from  personal_events '
     events_stream= sqlio.read_sql_query(query_events,engine)
@@ -41,6 +41,7 @@ def datastream_scatterplot(ds,temporal_time_hrs):
     # Getting list of dates that have high intense activities
     # to be removed to check Step count effect
     
+    #Parameterize these as well for activity exclusion and should be based on event stream
     dates_tobe_excluded=events_stream[events_stream.event_name.isin(['Running','Biking','Strength training','Training','FunctionalStrengthTraining','Rowing','activity','Afternoon Ride','Cycling','Evening Run','Afternoon Run'])]
     
     
@@ -48,7 +49,8 @@ def datastream_scatterplot(ds,temporal_time_hrs):
     
     # Matching events with sleep data
     es1=data_stream.copy()
-    es2=events_stream[(events_stream.event_name.isin(['Sleep']))&(events_stream.duration<=15)] #sleep
+    #es2=events_stream[(events_stream.event_name.isin(['Sleep']))&(events_stream.duration<=15)] #sleep
+    es2=events_stream[(events_stream.event_name.isin([effect_activity]))] #sleep
     
     es1['interval_start'] = es1['start_time'] + timedelta(hours=0)
     es1['interval_end'] = es1['start_time'] + timedelta(hours=temporal_time_hrs)

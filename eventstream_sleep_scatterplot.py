@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 import datetime
 
 
-def eventstream_scatterplot(eventname,temporal_time_hrs):
+def eventstream_scatterplot(temporal_time_hrs,eventname,effect_activity):
     query_events=query_events='select * from  personal_events '
     events_stream= sqlio.read_sql_query(query_events,engine)
     
@@ -28,8 +28,11 @@ def eventstream_scatterplot(eventname,temporal_time_hrs):
     # Matching events with sleep data
     
     #es1=data_stream.copy()
-    es1=events_stream[~(events_stream.event_name.isin(['Sleep']))]
-    es2=events_stream[(events_stream.event_name.isin(['Sleep']))&(events_stream.duration<=15)] #sleep
+    #es1=events_stream[~(events_stream.event_name.isin(['Sleep']))]
+    es1=events_stream[~(events_stream.event_name.isin([effect_activity]))]
+    es2=events_stream[(events_stream.event_name.isin([effect_activity]))] #sleep
+
+    #es2=events_stream[(events_stream.event_name.isin(['Sleep']))&(events_stream.duration<=15)] #sleep
     
     es1['interval_start'] = es1['start_time'] + timedelta(hours=0)
     es1['interval_end'] = es1['start_time'] + timedelta(hours=temporal_time_hrs)
@@ -100,9 +103,7 @@ def eventstream_scatterplot(eventname,temporal_time_hrs):
             )
             )
     
-            
-            
-            
+    
             
         """
     
