@@ -38,6 +38,8 @@ def datastream(tblname):
 def timestamp_modify(datastream):
     if 'timestamp' in datastream.columns:
         
+        datastream=datastream[datastream.unit.notnull()]
+        
         if any("perminute" in s for s in datastream.unit.unique()):        
             l=list(filter(lambda x: "perminute" in x, datastream.unit.unique()))
             print(l)
@@ -46,6 +48,14 @@ def timestamp_modify(datastream):
             datastream['start_time']=datastream['timestamp']-pd.Timedelta('1min')
             datastream.rename(columns={'timestamp':'end_time','individual_id':'user_id'},inplace=True)
             
+        elif any("bpm" in s for s in datastream.unit.unique()):        
+            l=list(filter(lambda x: "bpm" in x, datastream.unit.unique()))
+            #print(l)
+            datastream=datastream[datastream.unit==l[0]]
+ 
+            datastream['start_time']=datastream['timestamp']-pd.Timedelta('1min')
+            datastream.rename(columns={'timestamp':'end_time','individual_id':'user_id'},inplace=True)
+        
             
         else:
             datastream['start_time']=datastream['timestamp']

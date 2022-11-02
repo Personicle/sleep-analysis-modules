@@ -33,7 +33,8 @@ eventname_unit={
     
     'stepsperminute':'steps',
     'kilo_calories':'calories',
-    'meters':'distance'
+    'meters':'distance',
+    'bpm':'heartrate'
     }
 
 #Include activity type that needs to be summed up
