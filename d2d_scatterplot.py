@@ -126,6 +126,15 @@ def d2d_scatterplot(cause_activity,temporal_time_hrs,effect_activity):
     matched_data['activity_duration']=matched_data['activity_duration']/np.timedelta64(1,'m')
     
     
+    
+    # if sleep_event_matched_data.activity_name.unique() in (activity_cumulative):
+    #     matched_data=matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration','count'],aggfunc=np.sum).fillna(0).reset_index()
+  
+    # else:
+    #     matched_data=matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration','count'],aggfunc=np.mean).fillna(0).reset_index()
+
+    
+    
     scatterplot_insights=matched_data[(matched_data.cause_name!=0)][['user_id','cause_value','effect_value','cause_name','effect_name']].copy()
     
     scatterplot_insights['cause_units']=list(eventname_unit.keys())[list(eventname_unit.values()).index(matched_data.cause_name.unique()[0])]
@@ -143,9 +152,15 @@ def d2d_scatterplot(cause_activity,temporal_time_hrs,effect_activity):
             l.append([row['cause_value'],row['effect_value']])
             
     
+        # dic[user_id] = {'XAxis' : {'Measure':scatterplot_insights.cause_name.unique()[0] , 'unit': "Total"+" "+eventname_unit[scatterplot_insights.cause_units.unique()[0]]+" "+"per day"}, 'YAxis': {
+        # 'Measure': "heartrate",
+        # 'unit': "bpm"
+        # }, 'data' : l}
+        
+                
         dic[user_id] = {'XAxis' : {'Measure':scatterplot_insights.cause_name.unique()[0] , 'unit': "Total"+" "+eventname_unit[scatterplot_insights.cause_units.unique()[0]]+" "+"per day"}, 'YAxis': {
-        'Measure': "heartrate",
-        'unit': "bpm"
+        'Measure': antecedent_consequent[effect_activity],
+        'unit': list(eventname_unit.keys())[list(eventname_unit.values()).index(antecedent_consequent[effect_activity])]
         }, 'data' : l}
      
     

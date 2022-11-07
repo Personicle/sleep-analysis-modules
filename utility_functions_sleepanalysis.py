@@ -37,6 +37,9 @@ eventname_unit={
     'bpm':'heartrate'
     }
 
+
+
+
 #Include activity type that needs to be summed up
 activity_cumulative=['steps']
 
@@ -49,4 +52,11 @@ activity_analysisid={
     'distance':4
      
      }   
+
+
+antecedent_consequent={
+ 'interval_step_count':'steps',
+ 'heart_rate':'heartrate'
+ 
+ }
 

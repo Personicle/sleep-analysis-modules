@@ -18,7 +18,6 @@ from d2e_scatterplot import *
 
 
 
-
 def generate_scatterplotdata(temporal_time_hrs,comparing_activity, effect_activity,comparing_streamtype,effect_streamtype):
     if comparing_streamtype=='eventstream' and effect_streamtype=='eventstream':
         df=e2e_scatterplot(comparing_activity,temporal_time_hrs,effect_activity) #Enter event name like biking, running etc
