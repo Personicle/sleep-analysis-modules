@@ -183,7 +183,7 @@ def d2e_scatterplot(ds,temporal_time_hrs,effect_activity):
     
     pivot_sleep.columns = map(str.lower,pivot_sleep.columns)
     
-    
+    #Generating Scatterplot data to be sent to the application
     scatterplot_insights=pivot_sleep.copy()
     
     display(scatterplot_insights.head())
@@ -201,7 +201,7 @@ def d2e_scatterplot(ds,temporal_time_hrs,effect_activity):
             
     
         dic[user_id] = {'XAxis' : {'Measure':scatterplot_insights.activity_name.unique()[0] , 'unit': "Total"+" "+eventname_unit[scatterplot_insights.activity_units.unique()[0]]+" "+"per day"}, 'YAxis': {
-        'Measure': "Sleep",
+        'Measure': antecedent_consequent[effect_activity],#"Sleep",
         'unit': "hours"
         }, 'data' : l}
      

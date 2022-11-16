@@ -26,6 +26,8 @@ from utility_functions_sleepanalysis import *
 
 def e2d_scatterplot(ds,temporal_time_hrs,effect_activity):
     
+    #Reading the query from te events table
+    
     query_events=query_events='select * from  personal_events '
     events_stream= sqlio.read_sql_query(query_events,engine)
     data_stream=datastream(ds).copy()
@@ -87,6 +89,8 @@ def e2d_scatterplot(ds,temporal_time_hrs,effect_activity):
         print(es2.head())
         print(es2.dtypes)
         raise e
+        
+    #Matching query to match data and event streams
     
         #es1=steps(datastream), es2=sleep
     es1='es1_name'
@@ -133,6 +137,8 @@ def e2d_scatterplot(ds,temporal_time_hrs,effect_activity):
     sleep_event_matched_data = pd.read_sql_query(qry, conn)
     
     
+    #Converting to datetime format
+    
     for col in ['activity_name','activity_start_time','activity_end_time','sleep_start_time', 'sleep_end_time']:
         sleep_event_matched_data[col].fillna(0,inplace=True)
         
@@ -140,6 +146,7 @@ def e2d_scatterplot(ds,temporal_time_hrs,effect_activity):
     for f in ['activity_start_time','activity_end_time','sleep_start_time', 'sleep_end_time']:
         sleep_event_matched_data[f] = pd.to_datetime(sleep_event_matched_data[f], infer_datetime_format=True)
     
+    #Computing activity duration of matched events
     
     sleep_event_matched_data['activity_duration'] =sleep_event_matched_data['activity_end_time'] - sleep_event_matched_data['activity_start_time']
     sleep_event_matched_data['activity_duration']=sleep_event_matched_data['activity_duration']/np.timedelta64(1,'m')
@@ -151,8 +158,7 @@ def e2d_scatterplot(ds,temporal_time_hrs,effect_activity):
     sleep_event_matched_data=sleep_event_matched_data[(sleep_event_matched_data.activity_name!=0)].copy()
     
     
-    
-    #if sleep_event_matched_data.activity_name.unique()=='steps': #will change to list soon
+    #Computing whether matched events should be summed up or averaged based on their nature
     
     if sleep_event_matched_data.activity_name.unique() in (activity_cumulative):
         pivot_sleep=sleep_event_matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration','count'],aggfunc=np.sum).fillna(0).reset_index()
@@ -161,16 +167,14 @@ def e2d_scatterplot(ds,temporal_time_hrs,effect_activity):
         pivot_sleep=sleep_event_matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration','count'],aggfunc=np.mean).fillna(0).reset_index()
     
         
-        
+    #Column name modification    
     
     new_cols=[('{1} {0}'.format(*tup)) for tup in pivot_sleep.columns]
     
     # assign it to the dataframe (assuming you named it pivoted
     pivot_sleep.columns= new_cols
     
-    # resort the index, so you get the columns in the order you specified
-    #pivot_sleep.sort_index(axis='columns').head()
-    
+
     
     pivot_sleep.columns = pivot_sleep.columns.str.strip()
     
@@ -185,6 +189,8 @@ def e2d_scatterplot(ds,temporal_time_hrs,effect_activity):
     pivot_sleep.columns = map(str.lower,pivot_sleep.columns)
     
     
+    
+    #Generating scatterplot data that needs to be sent to the application
     scatterplot_insights=pivot_sleep.copy()
     
     display(scatterplot_insights.head())
@@ -202,7 +208,7 @@ def e2d_scatterplot(ds,temporal_time_hrs,effect_activity):
             
     
         dic[user_id] = {'XAxis' : {'Measure':scatterplot_insights.activity_name.unique()[0] , 'unit': "Total"+" "+eventname_unit[scatterplot_insights.activity_units.unique()[0]]+" "+"per day"}, 'YAxis': {
-        'Measure': "Sleep",
+        'Measure': antecedent_consequent[effect_activity],#'Sleep'
         'unit': "hours"
         }, 'data' : l}
      
@@ -210,6 +216,7 @@ def e2d_scatterplot(ds,temporal_time_hrs,effect_activity):
     scatterplot_data = pd.DataFrame(dic.items())
     scatterplot_data.rename(columns={0:'user_id',1:'correlation_result'},inplace=True)
     
+    #Assigning analysis id by activity type
     scatterplot_data['analysis_id']= scatterplot_insights['activity_name'].map(activity_analysisid)   # Will be automated based on the analysis
     scatterplot_data['timestampadded']=strftime("%Y-%m-%d %H:%M:%S", gmtime())
     scatterplot_data['view']='No'

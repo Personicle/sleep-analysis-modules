@@ -16,6 +16,8 @@ import datetime
 
 
 def e2e_scatterplot(temporal_time_hrs,eventname,effect_activity):
+    
+    #Query to fetch the event data
     query_events=query_events='select * from  personal_events '
     events_stream= sqlio.read_sql_query(query_events,engine)
     
@@ -25,7 +27,7 @@ def e2e_scatterplot(temporal_time_hrs,eventname,effect_activity):
     events_stream['end_date'] = pd.to_datetime(events_stream['end_time']).dt.date
     events_stream['end_date']=events_stream['end_date'].astype(str)
     
-    # Matching events with sleep data
+    # Matching events with event data
     
     #es1=data_stream.copy()
     #es1=events_stream[~(events_stream.event_name.isin(['Sleep']))]
@@ -68,6 +70,7 @@ def e2e_scatterplot(temporal_time_hrs,eventname,effect_activity):
         print(es2.dtypes)
         raise e
     
+    #Matching query to match event streams
     
     #es1=steps(datastream), es2=sleep
     es1='es1_name'
@@ -109,6 +112,8 @@ def e2e_scatterplot(temporal_time_hrs,eventname,effect_activity):
     
     sleep_event_matched_data = pd.read_sql_query(qry, conn)
     
+    #Missing value imputation of event data
+    
     
     for col in ['activity_name','activity_start_time','activity_end_time','sleep_start_time', 'sleep_end_time']:
         sleep_event_matched_data[col].fillna(0,inplace=True)
@@ -116,6 +121,7 @@ def e2e_scatterplot(temporal_time_hrs,eventname,effect_activity):
     for f in ['activity_start_time','activity_end_time','sleep_start_time', 'sleep_end_time']:
         sleep_event_matched_data[f] = pd.to_datetime(sleep_event_matched_data[f], infer_datetime_format=True)
     
+    #Computing activity duration on the matched event data
     
     sleep_event_matched_data['activity_duration'] =sleep_event_matched_data['activity_end_time'] - sleep_event_matched_data['activity_start_time']
     sleep_event_matched_data['activity_duration']=sleep_event_matched_data['activity_duration']/np.timedelta64(1,'m')
@@ -129,6 +135,7 @@ def e2e_scatterplot(temporal_time_hrs,eventname,effect_activity):
     pivot_sleep=sleep_event_matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration'],aggfunc=np.sum).fillna(0).reset_index()
     
     
+    ##COlumn name modification
     
     new_cols=[('{1} {0}'.format(*tup)) for tup in pivot_sleep.columns]
     
@@ -146,6 +153,9 @@ def e2e_scatterplot(temporal_time_hrs,eventname,effect_activity):
     
     pivot_sleep.rename(columns={'variable':'activity_name','value':'activity_value'},inplace=True)
     
+    
+    
+    #Generating scatterplot data to be sent to the application
     scatterplot_insights=pivot_sleep[pivot_sleep.activity_name==eventname].copy()
     
     dic = {}
@@ -170,6 +180,7 @@ def e2e_scatterplot(temporal_time_hrs,eventname,effect_activity):
     scatterplot_data = pd.DataFrame(dic.items())
     scatterplot_data.rename(columns={0:'user_id',1:'correlation_result'},inplace=True)
     
+    #Assigning analysis id by activity type
     scatterplot_data['analysis_id']= scatterplot_insights['activity_name'].map(activity_analysisid)   # Will be automated based on the analysis
     scatterplot_data['timestampadded']=strftime("%Y-%m-%d %H:%M:%S", gmtime())
     scatterplot_data['view']='No'

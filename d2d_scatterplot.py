@@ -19,6 +19,8 @@ from sqlite3 import InterfaceError
 from personicle_functions import *
 from utility_functions_sleepanalysis import *
 
+
+#Defining the antecedent and consequent parameters
 def d2d_scatterplot(cause_activity,temporal_time_hrs,effect_activity):
     
     data_stream_cause='select * from '+cause_activity
@@ -37,9 +39,22 @@ def d2d_scatterplot(cause_activity,temporal_time_hrs,effect_activity):
     data_stream_effect['end_date']= data_stream_effect['end_time'].dt.date
     
     
-    df_agg_cause=data_stream_cause.groupby(['user_id','end_date','unit'])['value'].sum().reset_index()
+    #Defining whether activities should be summed or averaged based upon their nature
     
-    df_agg_effect=data_stream_effect.groupby(['user_id','end_date','unit'])['value'].mean().reset_index()
+    if antecedent_consequent[cause_activity] in (activity_cumulative):
+        
+        df_agg_cause=data_stream_cause.groupby(['user_id','end_date','unit'])['value'].sum().reset_index()
+        
+    else:
+        df_agg_cause=data_stream_cause.groupby(['user_id','end_date','unit'])['value'].mean().reset_index()
+    
+    
+    if antecedent_consequent[effect_activity] in (activity_cumulative):
+        
+        df_agg_effect=data_stream_effect.groupby(['user_id','end_date','unit'])['value'].sum().reset_index()
+        
+    else:
+        df_agg_effect=data_stream_effect.groupby(['user_id','end_date','unit'])['value'].mean().reset_index()
     #The aggregation has to be defined as per the activity type
     
     es1=df_agg_cause.copy()
@@ -78,6 +93,7 @@ def d2d_scatterplot(cause_activity,temporal_time_hrs,effect_activity):
     es1='es1_name'
     es2='es2_name'
     
+    #Matching query to match overlapping data streams
     qry = f"""
         select  
             {es1}.user_ID,
@@ -108,9 +124,7 @@ def d2d_scatterplot(cause_activity,temporal_time_hrs,effect_activity):
             )
             )
     
-            
-            
-            
+        
             
         """
     
@@ -126,14 +140,9 @@ def d2d_scatterplot(cause_activity,temporal_time_hrs,effect_activity):
     matched_data['activity_duration']=matched_data['activity_duration']/np.timedelta64(1,'m')
     
     
-    
-    # if sleep_event_matched_data.activity_name.unique() in (activity_cumulative):
-    #     matched_data=matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration','count'],aggfunc=np.sum).fillna(0).reset_index()
-  
-    # else:
-    #     matched_data=matched_data.pivot_table(index=['user_id','sleep_duration'],columns=['activity_name'],values=['activity_duration','count'],aggfunc=np.mean).fillna(0).reset_index()
 
     
+    #Generating scatterplot data
     
     scatterplot_insights=matched_data[(matched_data.cause_name!=0)][['user_id','cause_value','effect_value','cause_name','effect_name']].copy()
     
@@ -152,11 +161,6 @@ def d2d_scatterplot(cause_activity,temporal_time_hrs,effect_activity):
             l.append([row['cause_value'],row['effect_value']])
             
     
-        # dic[user_id] = {'XAxis' : {'Measure':scatterplot_insights.cause_name.unique()[0] , 'unit': "Total"+" "+eventname_unit[scatterplot_insights.cause_units.unique()[0]]+" "+"per day"}, 'YAxis': {
-        # 'Measure': "heartrate",
-        # 'unit': "bpm"
-        # }, 'data' : l}
-        
                 
         dic[user_id] = {'XAxis' : {'Measure':scatterplot_insights.cause_name.unique()[0] , 'unit': "Total"+" "+eventname_unit[scatterplot_insights.cause_units.unique()[0]]+" "+"per day"}, 'YAxis': {
         'Measure': antecedent_consequent[effect_activity],
@@ -167,6 +171,7 @@ def d2d_scatterplot(cause_activity,temporal_time_hrs,effect_activity):
     scatterplot_data = pd.DataFrame(dic.items())
     scatterplot_data.rename(columns={0:'user_id',1:'correlation_result'},inplace=True)
     
+    #assigning Analysis id based on activity type
     scatterplot_data['analysis_id']= scatterplot_insights['cause_name'].map(activity_analysisid)   # Will be automated based on the analysis
     scatterplot_data['timestampadded']=strftime("%Y-%m-%d %H:%M:%S", gmtime())
     scatterplot_data['view']='No'

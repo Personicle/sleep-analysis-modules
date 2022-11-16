@@ -17,6 +17,7 @@ from e2d_scatterplot import *
 from d2e_scatterplot import *
 
 
+#Pass the required parameters based upon the analysis.More parameters to be added
 
 def generate_scatterplotdata(temporal_time_hrs,comparing_activity, effect_activity,comparing_streamtype,effect_streamtype):
     if comparing_streamtype=='eventstream' and effect_streamtype=='eventstream':
